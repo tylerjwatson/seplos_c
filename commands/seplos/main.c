@@ -1,5 +1,6 @@
 #include "./seplos_cmd.h"
 #include <stdio.h>
+#include <unistd.h>
 #include "seplos.h"
 
 int
@@ -35,5 +36,8 @@ main(int argc, char * * argv)
     seplos_json(stdout, &d, arguments.longer);
     break;
   }
+
+  close(fd);
+
   return 0;
 }
