@@ -61,6 +61,7 @@ static void __timer_on_tick(uv_timer_t *timer)
       (r = MQTTClient_waitForCompletion(context->client, token, 1000)) != MQTTCLIENT_SUCCESS)
   {
     log_error("error publishing message to topic. rc=%d", r);
+    goto json_out;
   }
 
   log_info("mqtt: message published.  topic=%s", context->topic);
@@ -79,7 +80,10 @@ int main(int argc, char **argv)
   uv_timer_t timer = {};
   seplosd_context_t context = {
       .bms_device = "/dev/ttyUSB0",
-      .topic = "seplos/0"};
+      .topic = "seplos/0",
+      .mqtt_uri = "tcp://10.0.0.5:1883",
+      .interval = 10000};
+
   MQTTClient_connectOptions options = MQTTClient_connectOptions_initializer;
   int r;
 
@@ -90,8 +94,8 @@ int main(int argc, char **argv)
   }
 
   if ((r = MQTTClient_create(&context.client,
-                             "tcp://10.0.0.5:1883",
-                             "seplosd",
+                             context.mqtt_uri,
+                             context.mqtt_client_id,
                              MQTTCLIENT_PERSISTENCE_NONE,
                              NULL)) != MQTTCLIENT_SUCCESS)
   {
@@ -115,7 +119,7 @@ int main(int argc, char **argv)
   if ((r = uv_timer_start(&timer,
                           __timer_on_tick,
                           0,
-                          5000 /* TODO: interval from commandline */)) < 0)
+                          context.interval)) < 0)
   {
     log_fatal("uv timer start failure.");
     goto out;
