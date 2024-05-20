@@ -67,12 +67,8 @@ seplos_data(seplos_device fd, unsigned int address, unsigned int pack, SeplosDat
       m->lowest_temperature = value;
   }
 
-  /* Charge-discharge current is a twos-complement number. */
-  int current = _sp_hex4b(t->charge_discharge_current, &invalid);
-  if ( current & 0x8000 )
-    m->charge_discharge_current = (~current) / -100.0;
-  else
-    m->charge_discharge_current = current / 100.0;
+  int16_t current = (int16_t)_sp_hex4b(t->charge_discharge_current, &invalid);
+  m->charge_discharge_current = current *.01f;
 
   m->total_battery_voltage = _sp_hex4b(t->total_battery_voltage, &invalid) / 100.0;
   m->residual_capacity = _sp_hex4b(t->residual_capacity, &invalid) / 100.0;
