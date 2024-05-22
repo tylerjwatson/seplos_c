@@ -1,12 +1,13 @@
 #pragma once
 
 #include <MQTTClient.h>
+#include <stdint.h>
 
 typedef struct seplosd_context {
-    const char *bms_device;
-    const char *topic;
-    const char *mqtt_uri;
-    const char *mqtt_client_id;
-    const uint64_t interval;
+    char *bms_device;
+    char *topic;
+    char *mqtt_uri;
+    char *mqtt_client_id;
+    uint64_t interval;
     MQTTClient client;
 } seplosd_context_t;

@@ -3,11 +3,13 @@
 #include <errno.h>
 #include <uv.h>
 #include <string.h>
+#include <unistd.h>
 
 #include "log.h"
 #include "seplos.h"
 #include "context.h"
 #include "json.h"
+#include "config.h"
 
 static void __timer_on_tick(uv_timer_t *timer)
 {
@@ -74,18 +76,67 @@ out:
   close(fd);
 }
 
+static int __validate_context(seplosd_context_t *context)
+{
+
+  if (!context->bms_device || !strcmp(context->bms_device, ""))
+  {
+    log_error("configuration error, bms_device is required.");
+    return -1;
+  }
+
+  if (!context->mqtt_uri || !strcmp(context->mqtt_uri, ""))
+  {
+    log_error("configuration error, mqtt_uri is required.");
+    return -1;
+  }
+
+  if (!context->topic || !strcmp(context->topic, ""))
+  {
+    log_error("configuration error, topic is required.");
+    return -1;
+  }
+
+  if (!context->mqtt_client_id || !strcmp(context->mqtt_client_id, ""))
+  {
+    log_error("configuration error, mqtt_client_id is required.");
+    return -1;
+  }
+
+  return 0;
+}
+
 int main(int argc, char **argv)
 {
   uv_loop_t *loop = uv_default_loop();
   uv_timer_t timer = {};
-  seplosd_context_t context = {
-      .bms_device = "/dev/ttyUSB0",
-      .topic = "seplos/0",
-      .mqtt_uri = "tcp://10.0.0.5:1883",
-      .interval = 10000};
+  int r, opt;
+  const char *config_path = "/etc/seplosd.conf";
+  seplosd_context_t context = {};
+
+  while ((opt = getopt(argc, argv, "c:")) != -1)
+  {
+    switch (opt)
+    {
+    case 'c':
+      config_path = optarg;
+      break;
+    }
+  }
+
+  if ((r = seplosd_config_fill(config_path, &context)) < 0)
+  {
+    log_fatal("Cannot read config file. rc=%d", r);
+    goto config_out;
+  }
+
+  if (__validate_context(&context) < 0)
+  {
+    log_fatal("configuration validation failed.");
+    goto out;
+  }
 
   MQTTClient_connectOptions options = MQTTClient_connectOptions_initializer;
-  int r;
 
   if ((r = uv_timer_init(loop, &timer)) < 0)
   {
@@ -109,7 +160,7 @@ int main(int argc, char **argv)
   if ((r = MQTTClient_connect(context.client, &options)) != MQTTCLIENT_SUCCESS)
   {
     log_fatal("mqtt client failed to connect.  rc=%d", r);
-    goto mqtt_out;
+    goto out;
   }
 
   log_info("mqtt connected");
@@ -138,6 +189,25 @@ mqtt_out:
   MQTTClient_destroy(context.client);
 
 out:
+  if (context.bms_device)
+  {
+    free(context.bms_device);
+  }
+  if (context.topic)
+  {
+    free(context.topic);
+  }
+  if (context.mqtt_uri)
+  {
+    free(context.mqtt_uri);
+  }
+  if (context.mqtt_client_id)
+  {
+    free(context.mqtt_client_id);
+  }
+
+config_out:
   uv_loop_close(loop);
+
   return r;
 }

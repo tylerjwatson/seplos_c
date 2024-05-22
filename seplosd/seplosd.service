@@ -1,0 +1,15 @@
+[Unit]
+Description=Seplos BMS to MQTT Bridge
+After=network.target
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+Restart=always
+RestartSec=10
+User=root
+ExecStart=/usr/local/bin/seplosd
+
+
+[Install]
+WantedBy=multi-user.target
