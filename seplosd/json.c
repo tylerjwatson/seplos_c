@@ -47,5 +47,15 @@ bool seplosd_json_serialize(const SeplosData *const data, json_object *root)
              json_object_object_add(root, "charge_sw",
                                     json_object_new_boolean(data->charge_switch)) < 0 ||
              json_object_object_add(root, "discharge_sw",
-                                    json_object_new_boolean(data->discharge_switch)) < 0);
+                                    json_object_new_boolean(data->discharge_switch)) < 0 ||
+             json_object_object_add(root, "max_temp",
+                                    json_object_new_int(round(data->highest_temperature))) < 0 ||
+             json_object_object_add(root, "min_temp",
+                                    json_object_new_int(round(data->lowest_temperature))) < 0 ||
+             json_object_object_add(root, "environment_temp",
+                                    json_object_new_int(round(data->temperature[4]))) < 0 ||
+             json_object_object_add(root, "bms_temp",
+                                    json_object_new_int(round(data->temperature[5]))) < 0
+
+    );
 }
