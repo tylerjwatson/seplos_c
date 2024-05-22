@@ -13,7 +13,7 @@ seplosd:	$(OBJS) $(LIBS)
 	$(CC) $(CFLAGS) -o $@ $(OBJS) $(LIBS)
 
 install: seplosd
-	install -m 744 seplosd $(PREFIX)/bin/
-	install -m 644 seplosd.conf /etc/
-	install -m 644 seplosd.service /usr/lib/systemd/system/
+	install -C -m 744 seplosd $(PREFIX)/bin/
+	[ -f /etc/seplosd.conf ] || install -C -m 644 seplosd.conf /etc/
+	install -C -m 644 seplosd.service /usr/lib/systemd/system/
 	systemctl daemon-reload

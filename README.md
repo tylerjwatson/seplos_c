@@ -1,62 +1,78 @@
-# seplos_c
-C library and tools for SEPLOS BMS (Battery Management System) using their protocol 2.0
 
-The software currently monitors all of the battery alarms and status, and emits
-a monitoring page to a text output. To be done: continuous monitoring with email
-for alarms and web output.
+# seplosd
 
-I've only tested this with one battery, and I've not seen any alarms on that battery,
-so the alarm code may have issues.
+A simple program to read the telemetry information out of Seplos BMSses over serial and put them in MQTT for consumption in systems like Home Assistant.
 
-> **Warning**
-> 
-> Please read the legal disclaimer in the file LICENSE. This section does not
-> limit that disclaimer.
->  
-> **The battery is a high-energy device. _It's dangerous!_**
->
-> The battery and this software should be handled only by a person who is fully
-> trained in all of the risk presented by a high-energy system.
->  
-> You may damage your battery through use of this software, or cause other damage,
-> including to life and property. Lithium batteries can catch fire, and can expel
-> noxious or toxic gas or liquid. High-current circuits may catch fire. There is
-> risk of electric shock, burns, or degloving injury (look it up) due to high
-> temperature caused by high current across jewelery or other conductors, and
-> blindness, burns, or other injury caused by arc-flash.
->  
-> When working on the battery or the system connected to it:
-> 
->  *  Take all proper precautions against electric shock, high-temperature burns, and
->     arc-flash.
->  
->  *  Disable the battery using _both_ its manual circuit breaker and its facility
->     to hibernate, along with any similar facilites of your equipment.
->  
->  *  Do not touch any conductor that might be connected, directly or indirectly,
->     to the battery or other energized circuits.
-> 
->  *  Do not wear jewelery in the presence of electrical systems that can sustain a
->     high current or voltage. Even in systems with a voltage considered "safe",
->     high current can cause a degloving injury. Photos of degloving injuries are
->     available on the net, and are very disturbing.
->
->  * Protect yourself by using insulating gloves, shoes with non-conductive soles,
->    and an insulating helmet.
->
->  * Have a second person present, who is trained and able to help you if you
->    are shocked or injured. Go over what you plan to do with that person before
->    you act.
->
->  * Maintain situational awareness and think for yourself! There are additional
->    hazards, both known and unknown.
->
->  * Don't rush or skip precautions.
-> 
-> This software has bugs, omissions, failures, and limitations, both known and
-> unknown. It is not possible for software this complicated to be without them.
-> This software may cause the battery to work in incorrect, dangerous, damaging,
-> or unpredictable ways.
->
-> Deliberately changing the parameters of your battery is likely to result in
-> danger or damage.
+Based on the C library and tools for SEPLOS BMS (Battery Management System) by @BrucePerens. The modified source-code for this library is available here in accordance with the GPL.
+
+## Build Dependencies
+* `libuv1-dev`
+* `libjson-c-dev`
+* `libpaho-mqtt-dev`
+* `libconfig-dev`
+
+## Building
+```bash
+git clone https://github.com/tylerjwatson/seplosd.git
+cd seplosd
+make
+sudo make install
+```
+
+## seplosd Configuration
+
+A default configuration is made available at `/etc/seplosd.conf` and you will need to edit it to your needs.
+
+```conf
+# The serial device the BMS is connected to
+bms_device = "/dev/ttyUSB0";
+# The MQTT topic to publish BMS telemetry data into
+topic = "seplos/0";
+# A URI of the MQTT broker.  
+#
+# A null-terminated string specifying the server to which the client will connect. It takes the form protocol://host:port. Currently, protocol must be:
+# tcp:// or mqtt:// - Insecure TCP
+# ssl:// or mqtts:// - Encrypted SSL/TLS
+# ws:// - Insecure websockets
+# wss:// - Secure web sockets
+#
+# The TLS enabled prefixes (ssl, mqtts, wss) are only valid if a TLS version of the library is linked with. For host, you can specify
+# either an IP address or a host name. For instance, to connect to a server running on the local machines with the default MQTT port, specify tcp://localhost:1883. 
+mqtt_uri = "";
+# The client ID used to identify this instance to the MQTT server.  If you are running more than one instance of seplosd then you will
+# need to change this.
+mqtt_client_id = "seplosd";
+# BMS refresh interval in milliseconds.
+interval = 10000;
+```
+
+## Running seplosd
+```bash
+systemctl enable --now seplosd
+```
+
+## MQTT Format
+This is the MQTT output from my battery, and can be used as a sample:
+```json
+{
+    "i": -8.3599996566772461, // load current
+    "v": 53.009998321533203, // voltage
+    "dv": 0.00099992752075195312, // pack delta voltage
+    "p": -443.16357421875, // load power
+    "soc": 98, // state of charge
+    "soh": 100, // state of health
+    "cap": 280, // battery capacity in Ah
+    "ncycles": 4, // number of cycles
+    "cap_residual": 274, // residual capacity in Ah
+    "cap_rated": 280, // rated capacity in Ah
+    "bal": false, // true if the balancer is enabled
+    "hot": true, // ??? may remove
+    "cold": true, // ??? may remove
+    "shutdown": false, // true if the battery has shutdown
+    "standby": false, // true if the battery is in standby (not discharging or charging)
+    "charge": false, // true if the battery is charging
+    "discharge": true, // true if the battery is discharging
+    "charge_sw": true, // true if the charge FET is enabled
+    "discharge_sw": true // true if the discharge FET is enabled 
+}
+```
