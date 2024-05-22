@@ -21,6 +21,8 @@ static void __timer_on_tick(uv_timer_t *timer)
 
   log_trace("timer on tick");
 
+  MQTTClient_yield();
+
   if ((fd = seplos_open(context->bms_device)) < 0)
   {
     log_error("cannot open device: %s, will try again next tick", strerror(errno));
@@ -62,7 +64,7 @@ static void __timer_on_tick(uv_timer_t *timer)
   if ((r = MQTTClient_publishMessage(context->client, context->topic, &message, &token)) != MQTTCLIENT_SUCCESS ||
       (r = MQTTClient_waitForCompletion(context->client, token, 1000)) != MQTTCLIENT_SUCCESS)
   {
-    log_error("error publishing message to topic. rc=%d", r);
+    log_error("error publishing message to topic. rc=%d %s", r, MQTTClient_strerror(r));
     goto json_out;
   }
 
@@ -72,8 +74,8 @@ json_out:
   json_object_put(root);
 
 out:
-  log_trace("close fd %d", fd);
   close(fd);
+  log_trace("bms closed. fd=%d", fd);
 }
 
 static int __validate_context(seplosd_context_t *context)
